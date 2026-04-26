@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="英语连连看">
+<meta name="theme-color" content="#08090a">
+<title>英语连连看 · CET4冲关</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #08090a; touch-action: manipulation; }
+
+:root {
+  --bg-dark: #08090a;
+  --bg-mid: #0c1023;
+  --bg-card: #121834;
+  --bg-card-hover: #1a2550;
+  --cyan: #00f0ff;
+  --pink: #ff3296;
+  --gold: #ffc832;
+  --green: #32ff96;
+  --purple: #a050ff;
+  --orange: #ff7832;
+  --red: #ff3232;
+  --text-white: #f0f5ff;
+  --text-grey: #7890b4;
+  --text-dim: #3c4b6e;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+body { font-family: 'Noto Sans SC', sans-serif; color: var(--text-white); }
+
+/* ── Canvas & Screens ── */
+#canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 10;
+  padding: calc(var(--safe-top) + 12px) 16px calc(var(--safe-bottom) + 12px);
+  transition: opacity 0.4s ease;
+}
+.screen.hidden { opacity: 0; pointer-events: none; }
+
+/* ── Stars background ── */
+.stars { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.star {
+  position: absolute; border-radius: 50%; background: white;
+  animation: twinkle var(--dur, 3s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes twinkle {
+  0%, 100% { opacity: var(--min-op, 0.2); transform: scale(1); }
+  50% { opacity: var(--max-op, 1); transform: scale(1.3); }
+}
+
+/* ── MENU ── */
+#menuScreen { gap: 20px; background: radial-gradient(ellipse at 30% 20%, #1a0040 0%, transparent 60%), radial-gradient(ellipse at 70% 80%, #002040 0%, transparent 60%), var(--bg-dark); }
+
+.game-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(28px, 7vw, 52px);
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-align: center;
+  background: linear-gradient(135deg, var(--cyan), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(0,240,255,0.5));
+  animation: titleFloat 3s ease-in-out infinite;
+}
+@keyframes titleFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+.subtitle {
+  font-size: clamp(13px, 3.5vw, 17px); color: var(--pink);
+  text-align: center; letter-spacing: 2px; opacity: 0.9;
+}
+
+.feature-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; width: 100%; max-width: 480px;
+}
+.feature-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; padding: 14px 12px;
+  text-align: center; animation: featurePulse 2s ease-in-out infinite;
+}
+.feature-card:nth-child(2) { animation-delay: 0.5s; }
+.feature-card:nth-child(3) { animation-delay: 1s; }
+.feature-card:nth-child(4) { animation-delay: 1.5s; }
+@keyframes featurePulse { 0%,100%{border-color:rgba(255,255,255,0.1)} 50%{border-color:rgba(0,240,255,0.3)} }
+.feature-icon { font-size: 24px; margin-bottom: 4px; }
+.feature-text { font-size: 12px; color: var(--text-grey); }
+
+.start-btn {
+  width: 100%; max-width: 320px;
+  padding: 18px;
+  border: 2px solid var(--cyan);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(0,240,255,0.15), rgba(0,240,255,0.05));
+  color: var(--cyan);
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(16px, 4vw, 20px);
+  font-weight: 700;
+  letter-spacing: 3px;
+  cursor: pointer;
+  position: relative; overflow: hidden;
+  animation: btnGlow 2s ease-in-out infinite;
+  -webkit-appearance: none;
+}
+@keyframes btnGlow {
+  0%,100%{box-shadow:0 0 15px rgba(0,240,255,0.3), inset 0 0 15px rgba(0,240,255,0.05)}
+  50%{box-shadow:0 0 35px rgba(0,240,255,0.6), inset 0 0 25px rgba(0,240,255,0.15)}
+}
+.start-btn:active { transform: scale(0.97); }
+.start-btn::after {
+  content:''; position:absolute; inset:-2px;
+  background: linear-gradient(135deg, transparent, rgba(0,240,255,0.1), transparent);
+  transform: translateX(-100%); animation: shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer { 0%{transform:translateX(-100%)} 60%,100%{transform:translateX(100%)} }
+
+.tips { font-size: 12px; color: var(--text-dim); text-align: center; line-height: 1.8; }
+
+/* ── GAME SCREEN ── */
+#gameScreen {
+  flex-direction: column; gap: 0;
+  padding: 0; justify-content: flex-start;
+  background: radial-gradient(ellipse at 20% 10%, #150030 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 90%, #001530 0%, transparent 50%), var(--bg-dark);
+}
+
+/* HUD */
+.hud {
+  width: 100%; padding: 8px 14px;
+  padding-top: calc(var(--safe-top) + 8px);
+  background: rgba(8,9,20,0.9);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(10px);
+  display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;
+}
+.hud-row1 { display: flex; align-items: center; justify-content: space-between; }
+.hud-level {
+  font-family: 'Orbitron', monospace; font-size: clamp(13px, 3.5vw, 16px);
+  color: var(--level-color, var(--cyan));
+  text-shadow: 0 0 10px var(--level-color, var(--cyan));
+}
+.hud-score { font-family: 'Orbitron', monospace; font-size: clamp(13px, 3.5vw, 16px); color: var(--gold); }
+.hud-time {
+  font-family: 'Orbitron', monospace; font-size: clamp(13px, 3.5vw, 16px);
+  transition: color 0.3s;
+}
+.hud-time.urgent { color: var(--red); animation: urgentPulse 0.5s ease-in-out infinite; }
+.hud-time.warn { color: var(--gold); }
+.hud-time.ok { color: var(--green); }
+@keyframes urgentPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+.progress-bar-wrap { width: 100%; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow:hidden; }
+.progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--level-color, var(--cyan)), var(--green)); transition: width 0.4s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 0 8px var(--level-color, var(--cyan)); }
+
+.hud-row3 { display: flex; align-items: center; justify-content: space-between; }
+.hud-stats { font-size: 11px; color: var(--text-grey); }
+.hint-btn {
+  font-size: 11px; color: var(--gold); background: rgba(255,200,50,0.1);
+  border: 1px solid rgba(255,200,50,0.3); border-radius: 8px;
+  padding: 3px 10px; cursor: pointer; -webkit-appearance: none;
+}
+.hint-btn:active { transform: scale(0.95); }
+.hint-btn.disabled { color: var(--text-dim); border-color: var(--text-dim); }
+
+/* Combo banner */
+.combo-banner {
+  position: absolute; top: 110px; left: 50%; transform: translateX(-50%);
+  font-family: 'Orbitron', monospace; font-size: clamp(18px, 5vw, 26px);
+  color: var(--gold); text-shadow: 0 0 20px var(--gold);
+  white-space: nowrap; pointer-events: none; z-index: 50;
+  animation: comboPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  transition: opacity 0.3s;
+}
+@keyframes comboPop { 0%{transform:translateX(-50%) scale(0.3)} 100%{transform:translateX(-50%) scale(1)} }
+
+/* Result flash */
+.result-flash {
+  position: absolute; top: 48%; left: 50%; transform: translate(-50%,-50%);
+  font-family: 'Orbitron', monospace; font-size: clamp(20px,6vw,32px);
+  font-weight: 700; pointer-events: none; z-index: 50;
+  white-space: nowrap;
+  animation: resultAnim 0.8s ease forwards;
+}
+@keyframes resultAnim {
+  0%{opacity:0;transform:translate(-50%,-70%) scale(0.5)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}
+  70%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-40%) scale(0.9)}
+}
+
+/* Cards area */
+.cards-area {
+  flex: 1; display: flex; gap: 0; overflow: hidden; width: 100%; position: relative;
+}
+.cards-column {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 8px 6px; gap: 6px;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.cards-column:last-child { border-right: none; }
+.col-label {
+  font-family: 'Orbitron', monospace; font-size: 10px; letter-spacing: 2px;
+  text-align: center; padding: 2px 0; flex-shrink: 0;
+}
+
+/* Card */
+.card {
+  width: 100%; border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  background: var(--bg-card);
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  position: relative; overflow: hidden;
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1),
+              border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+  min-height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  animation: cardAppear 0.4s cubic-bezier(0.34,1.56,0.64,1) backwards;
+  -webkit-user-select: none; user-select: none;
+}
+.card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+@keyframes cardAppear {
+  0% { transform: scale(0.6) translateY(10px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.card.en-card { border-left: 3px solid var(--cyan); }
+.card.cn-card { border-left: 3px solid var(--pink); }
+
+.card:active { transform: scale(0.95); }
+
+.card.selected {
+  transform: scale(1.05);
+  border-color: var(--select-color, var(--gold));
+  background: rgba(255,200,50,0.12);
+  box-shadow: 0 0 20px rgba(255,200,50,0.4), 0 4px 16px rgba(0,0,0,0.5);
+}
+.card.en-card.selected { --select-color: var(--gold); }
+.card.cn-card.selected { --select-color: var(--pink); }
+
+.card.matched {
+  opacity: 0.25; transform: scale(0.95);
+  border-color: var(--green); background: rgba(50,255,150,0.05);
+  pointer-events: none;
+}
+.card.wrong {
+  animation: wrongShake 0.4s ease;
+  border-color: var(--red) !important; background: rgba(255,50,50,0.1) !important;
+}
+@keyframes wrongShake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-8px)}
+  40%{transform:translateX(8px)}
+  60%{transform:translateX(-5px)}
+  80%{transform:translateX(5px)}
+}
+.card.hint-glow {
+  animation: hintGlow 0.8s ease-in-out infinite;
+  border-color: var(--gold) !important;
+}
+@keyframes hintGlow {
+  0%,100%{box-shadow:0 0 10px rgba(255,200,50,0.3)}
+  50%{box-shadow:0 0 25px rgba(255,200,50,0.8)}
+}
+
+.card-word {
+  font-size: clamp(12px, 3.2vw, 16px);
+  font-weight: 700; line-height: 1.2;
+  word-break: break-word;
+}
+.en-card .card-word { font-family: 'Orbitron', monospace; font-size: clamp(11px, 2.8vw, 14px); letter-spacing: 1px; }
+.card-tag {
+  position: absolute; top: 3px; left: 5px;
+  font-size: 9px; font-family: 'Orbitron', monospace;
+  opacity: 0.5; letter-spacing: 1px;
+}
+.en-card .card-tag { color: var(--cyan); }
+.cn-card .card-tag { color: var(--pink); }
+
+/* Connect line canvas */
+#lineCanvas { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+
+/* Particle canvas */
+#particleCanvas { position: absolute; inset: 0; pointer-events: none; z-index: 30; }
+
+/* ── OVERLAY screens ── */
+.overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; padding: 32px 24px;
+  padding-top: calc(var(--safe-top) + 32px);
+  background: rgba(8,9,20,0.92);
+  backdrop-filter: blur(16px);
+  transition: opacity 0.4s ease;
+}
+.overlay.hidden { opacity: 0; pointer-events: none; }
+
+.overlay-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(28px, 8vw, 48px); font-weight: 900;
+  text-align: center; line-height: 1.1;
+}
+.overlay-sub { font-size: clamp(14px, 4vw, 18px); color: var(--text-grey); text-align: center; }
+.overlay-stats {
+  display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 360px;
+  background: rgba(255,255,255,0.04); border-radius: 16px; padding: 16px 20px;
+}
+.stat-row { display: flex; justify-content: space-between; align-items: center; }
+.stat-label { font-size: 14px; color: var(--text-grey); }
+.stat-value { font-family: 'Orbitron', monospace; font-size: 16px; color: var(--text-white); }
+
+.overlay-btn {
+  width: 100%; max-width: 320px; padding: 16px;
+  border-radius: 14px; border: 2px solid;
+  font-family: 'Orbitron', monospace; font-size: 16px; font-weight: 700;
+  letter-spacing: 2px; cursor: pointer; -webkit-appearance: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.overlay-btn:active { transform: scale(0.97); }
+.btn-primary { border-color: var(--cyan); color: var(--cyan); background: rgba(0,240,255,0.1); }
+.btn-secondary { border-color: var(--text-dim); color: var(--text-grey); background: rgba(255,255,255,0.03); }
+.btn-danger { border-color: var(--pink); color: var(--pink); background: rgba(255,50,150,0.1); }
+
+/* memory badge in level clear */
+.memory-badge {
+  background: rgba(160,80,255,0.15); border: 1px solid rgba(160,80,255,0.4);
+  border-radius: 10px; padding: 8px 14px; font-size: 12px; color: var(--purple);
+  text-align: center; max-width: 320px;
+}
+
+/* ── Particles ── */
+.particle {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  animation: particleFly var(--dur) ease forwards;
+}
+@keyframes particleFly {
+  0% { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* ── Responsive landscape ── */
+@media (orientation: landscape) and (max-height: 500px) {
+  .feature-grid { grid-template-columns: repeat(4,1fr); }
+  .game-title { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<!-- ═══════════ MENU ═══════════ -->
+<div class="screen" id="menuScreen">
+  <div class="game-title">英语连连看</div>
+  <div class="subtitle">CET-4 词汇冲关 · 艾宾浩斯记忆法</div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <div class="feature-text">1000+ CET-4<br>核心词汇</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧠</div>
+      <div class="feature-text">艾宾浩斯<br>记忆曲线</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-text">10关渐进<br>难度挑战</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔥</div>
+      <div class="feature-text">连击加分<br>音效震撼</div>
+    </div>
+  </div>
+
+  <button class="start-btn" onclick="startGame()">▶ 开始挑战</button>
+
+  <div class="tips">
+    点击英文 → 点击对应中文完成匹配<br>
+    连击越多奖励越高 · 错误扣时间
+  </div>
+</div>
+
+<!-- ═══════════ GAME ═══════════ -->
+<div class="screen hidden" id="gameScreen">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-row1">
+      <div class="hud-time ok" id="hudTime">02:00</div>
+      <div class="hud-level" id="hudLevel">第1关 · 入门</div>
+      <div class="hud-score" id="hudScore">★ 0</div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+    </div>
+    <div class="hud-row3">
+      <div class="hud-stats" id="hudStats">已匹配 0/10 · 错误 0</div>
+      <button class="hint-btn" id="hintBtn" onclick="useHint()">💡 提示 (3次)</button>
+    </div>
+  </div>
+
+  <!-- Cards Area -->
+  <div class="cards-area" id="cardsArea">
+    <canvas id="lineCanvas"></canvas>
+    <canvas id="particleCanvas"></canvas>
+    <div class="cards-column" id="enColumn">
+      <div class="col-label" style="color:var(--cyan)">E N G L I S H</div>
+    </div>
+    <div class="cards-column" id="cnColumn">
+      <div class="col-label" style="color:var(--pink)">中　文</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ LEVEL CLEAR ═══════════ -->
+<div class="overlay hidden" id="levelClearScreen">
+  <div class="overlay-title" style="color:var(--gold)">🎉 过关！</div>
+  <div class="overlay-sub" id="lcSubtitle">第 1 关完成</div>
+  <div class="overlay-stats" id="lcStats"></div>
+  <div class="memory-badge" id="lcMemory">🧠 艾宾浩斯：错词将在下关优先出现</div>
+  <button class="overlay-btn btn-primary" id="lcNextBtn" onclick="nextLevel()">下一关 →</button>
+  <button class="overlay-btn btn-secondary" onclick="goMenu()">返回菜单</button>
+</div>
+
+<!-- ═══════════ GAME OVER ═══════════ -->
+<div class="overlay hidden" id="gameOverScreen">
+  <div class="overlay-title" style="color:var(--red)">⏱ 时间到！</div>
+  <div class="overlay-sub" id="goSub"></div>
+  <div class="overlay-stats" id="goStats"></div>
+  <button class="overlay-btn btn-danger" onclick="retryLevel()">🔄 重试本关</button>
+  <button class="overlay-btn btn-secondary" onclick="goMenu()">返回菜单</button>
+</div>
+
+<!-- ═══════════ VICTORY ═══════════ -->
+<div class="overlay hidden" id="victoryScreen">
+  <div class="overlay-title" style="background:linear-gradient(135deg,var(--gold),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent">🏆 全部通关！</div>
+  <div class="overlay-sub">恭喜掌握 CET-4 核心词汇！</div>
+  <div class="overlay-stats" id="vicStats"></div>
+  <button class="overlay-btn btn-primary" onclick="goMenu()">再来一次</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  词库 (CET-4, 10关)
+// ═══════════════════════════════════════════════════════
+const WORD_BANK = {
+  1:[["apple","苹果"],["book","书"],["cat","猫"],["dog","狗"],["egg","鸡蛋"],
+     ["fish","鱼"],["girl","女孩"],["hand","手"],["ice","冰"],["jump","跳"],
+     ["key","钥匙"],["lamp","灯"],["moon","月亮"],["nose","鼻子"],["open","打开"],
+     ["pen","钢笔"],["rain","雨"],["sun","太阳"],["time","时间"],["water","水"],
+     ["air","空气"],["bed","床"],["car","汽车"],["day","白天"],["ear","耳朵"],
+     ["face","脸"],["game","游戏"],["home","家"],["idea","想法"],["job","工作"],
+     ["kind","善良的"],["life","生活"],["man","男人"],["name","名字"],["old","老的"],
+     ["put","放置"],["red","红色"],["see","看见"],["top","顶部"],["use","使用"],
+     ["bus","公交车"],["cup","杯子"],["fly","飞"],["get","得到"],["hat","帽子"],
+     ["leg","腿"],["map","地图"],["net","网"],["pay","付钱"],["run","跑"]],
+  2:[["about","关于"],["afraid","害怕的"],["after","在...之后"],["agree","同意"],
+     ["alone","独自地"],["already","已经"],["always","总是"],["angry","生气的"],
+     ["answer","回答"],["area","地区"],["arrive","到达"],["article","文章"],
+     ["artist","艺术家"],["attack","攻击"],["attend","参加"],["avoid","避免"],
+     ["award","奖励"],["aware","意识到的"],["badly","非常"],["basic","基本的"],
+     ["beach","海滩"],["begin","开始"],["below","在...下面"],["bench","长椅"],
+     ["birth","出生"],["blame","责备"],["blind","盲目的"],["block","街区"],
+     ["blood","血液"],["board","董事会"],["boost","提升"],["bored","无聊的"],
+     ["brain","大脑"],["brave","勇敢的"],["break","打破"],["bring","带来"],
+     ["broad","宽广的"],["brown","棕色"],["build","建造"],["burst","爆裂"],
+     ["busy","忙碌的"],["calm","平静的"],["carry","携带"],["cause","原因"],
+     ["chain","链条"],["cheap","便宜的"],["check","检查"],["chief","首席的"],
+     ["claim","声称"],["clean","干净的"]],
+  3:[["campus","校园"],["lecture","讲座"],["semester","学期"],["diploma","文凭"],
+     ["faculty","全体教员"],["dormitory","宿舍"],["scholarship","奖学金"],
+     ["academic","学术的"],["graduate","毕业"],["research","研究"],
+     ["library","图书馆"],["laboratory","实验室"],["professor","教授"],
+     ["textbook","教科书"],["schedule","时间表"],["biology","生物学"],
+     ["chemistry","化学"],["physics","物理"],["history","历史"],["literature","文学"],
+     ["economy","经济"],["philosophy","哲学"],["psychology","心理学"],
+     ["statistics","统计学"],["mathematics","数学"],["technology","技术"],
+     ["engineering","工程"],["medicine","医学"],["language","语言"],["culture","文化"],
+     ["society","社会"],["education","教育"],["knowledge","知识"],["experience","经验"],
+     ["practice","实践"],["examination","考试"],["certificate","证书"],["degree","学位"],
+     ["admission","入学"],["tuition","学费"],["assignment","作业"],["debate","辩论"],
+     ["analysis","分析"],["creativity","创造力"],["intelligent","聪明的"],
+     ["diligent","勤奋的"],["curious","好奇的"],["ambitious","有抱负的"],
+     ["confident","自信的"],["independent","独立的"]],
+  4:[["admire","钦佩"],["affection","感情"],["anxiety","焦虑"],["appreciate","感激"],
+     ["attitude","态度"],["behavior","行为"],["benefit","利益"],["burden","负担"],
+     ["challenge","挑战"],["character","性格"],["communicate","交流"],
+     ["compassion","同情"],["courage","勇气"],["decision","决定"],["desire","渴望"],
+     ["dignity","尊严"],["discover","发现"],["doubt","怀疑"],["dream","梦想"],
+     ["effort","努力"],["emotion","情感"],["empathy","同理心"],["encourage","鼓励"],
+     ["enthusiasm","热情"],["escape","逃脱"],["explore","探索"],["express","表达"],
+     ["failure","失败"],["faithful","忠实的"],["fantasy","幻想"],["forgive","原谅"],
+     ["freedom","自由"],["friendship","友谊"],["genuine","真诚的"],["grateful","感激的"],
+     ["happiness","幸福"],["harmony","和谐"],["hesitate","犹豫"],["honest","诚实的"],
+     ["honor","荣誉"],["humble","谦逊的"],["humor","幽默"],["identity","身份"],
+     ["imagine","想象"],["impulse","冲动"],["inspire","激励"],["lonely","孤独的"],
+     ["passion","激情"],["patient","耐心的"],["peaceful","和平的"]],
+  5:[["ability","能力"],["accomplish","完成"],["achieve","达到"],["adapt","适应"],
+     ["administration","管理"],["advantage","优势"],["agency","机构"],
+     ["analyze","分析"],["announce","宣布"],["anticipate","预期"],
+     ["applicant","申请人"],["apply","申请"],["appropriate","适当的"],
+     ["approve","批准"],["assess","评估"],["asset","资产"],["authority","权威"],
+     ["balance","平衡"],["barrier","障碍"],["budget","预算"],["campaign","运动"],
+     ["candidate","候选人"],["capacity","能力"],["category","类别"],
+     ["colleague","同事"],["commitment","承诺"],["competition","竞争"],
+     ["component","组件"],["compromise","妥协"],["concept","概念"],
+     ["consequence","后果"],["contract","合同"],["crucial","关键的"],
+     ["delegate","委托"],["demand","需求"],["demonstrate","证明"],
+     ["department","部门"],["determine","决定"],["discipline","纪律"],
+     ["document","文件"],["emphasize","强调"],["engage","从事"],["enhance","提升"],
+     ["enterprise","企业"],["establish","建立"],["evidence","证据"],
+     ["execute","执行"],["expand","扩展"],["expertise","专业知识"],
+     ["facilitate","促进"]],
+  6:[["algorithm","算法"],["artificial","人工的"],["automation","自动化"],
+     ["bandwidth","带宽"],["breakthrough","突破"],["circuit","电路"],
+     ["collaborate","合作"],["computation","计算"],["configure","配置"],
+     ["database","数据库"],["debug","调试"],["deploy","部署"],["digital","数字的"],
+     ["encrypt","加密"],["engineer","工程师"],["equation","方程式"],
+     ["experiment","实验"],["hardware","硬件"],["hypothesis","假设"],
+     ["innovation","创新"],["integrate","整合"],["interface","界面"],
+     ["iteration","迭代"],["mechanism","机制"],["methodology","方法论"],
+     ["network","网络"],["optimize","优化"],["parameter","参数"],
+     ["precision","精度"],["probability","概率"],["protocol","协议"],
+     ["recursive","递归的"],["resilient","弹性的"],["scalable","可扩展的"],
+     ["simulate","模拟"],["software","软件"],["structure","结构"],
+     ["synthesize","综合"],["transform","转换"],["validate","验证"],
+     ["variable","变量"],["virtual","虚拟的"],["binary","二进制的"],
+     ["browser","浏览器"],["compiler","编译器"],["firmware","固件"],
+     ["graphics","图形"],["internet","互联网"],["mobile","移动的"],
+     ["programming","编程"]],
+  7:[["accumulate","积累"],["acquisition","收购"],["benchmark","基准"],
+     ["capital","资本"],["commodity","商品"],["consolidate","整合"],
+     ["consumer","消费者"],["currency","货币"],["deficit","赤字"],
+     ["deflation","通货紧缩"],["depreciation","贬值"],["diversify","多样化"],
+     ["dividend","股息"],["domestic","国内的"],["equilibrium","均衡"],
+     ["equity","股权"],["expenditure","支出"],["export","出口"],
+     ["fiscal","财政的"],["forecast","预测"],["franchise","特许经营"],
+     ["hedge","对冲"],["import","进口"],["incentive","激励"],["income","收入"],
+     ["inflation","通货膨胀"],["infrastructure","基础设施"],["interest","利息"],
+     ["investment","投资"],["leverage","杠杆"],["liability","负债"],
+     ["liquidity","流动性"],["margin","利润率"],["merger","合并"],
+     ["monetary","货币的"],["monopoly","垄断"],["mortgage","抵押贷款"],
+     ["negotiate","谈判"],["portfolio","投资组合"],["productivity","生产率"],
+     ["profit","利润"],["recession","衰退"],["regulation","监管"],
+     ["revenue","收入"],["sector","行业"],["shareholder","股东"],
+     ["subsidy","补贴"],["tariff","关税"],["taxation","税收"],["yield","收益率"]],
+  8:[["abstract","摘要"],["affirm","确认"],["ambiguous","含糊的"],
+     ["analogous","类似的"],["apparatus","装置"],["articulate","表达清楚"],
+     ["assert","断言"],["assumption","假设"],["authentic","真实的"],
+     ["axiom","公理"],["categorical","明确的"],["causation","因果关系"],
+     ["coherent","连贯的"],["colloquial","口语的"],["compel","迫使"],
+     ["conclusive","确定的"],["conjecture","推测"],["controversy","争议"],
+     ["conventional","传统的"],["conviction","信念"],["credible","可信的"],
+     ["critique","批评"],["deductive","演绎的"],["denounce","谴责"],
+     ["derive","推导"],["discourse","论述"],["distinguish","区分"],
+     ["elaborate","详述"],["empirical","实证的"],["endeavor","努力"],
+     ["enumerate","列举"],["explicit","明确的"],["extrapolate","推断"],
+     ["fallacy","谬误"],["formulate","制定"],["generalize","概括"],
+     ["illuminate","阐明"],["implicit","隐含的"],["indicate","表明"],
+     ["inference","推论"],["inherent","固有的"],["interpret","解释"],
+     ["investigate","调查"],["legitimate","合法的"],["manifest","明显的"],
+     ["paradigm","范例"],["phenomenon","现象"],["postulate","假定"],
+     ["profound","深刻的"],["refute","反驳"]],
+  9:[["abstain","戒除"],["accelerate","加速"],["accommodate","适应"],
+     ["adamant","坚定的"],["adversary","对手"],["aesthetic","美学的"],
+     ["affluent","富裕的"],["alleviate","减轻"],["ambivalent","矛盾的"],
+     ["amplify","放大"],["antagonist","对抗者"],["apprehend","理解"],
+     ["arbitrary","武断的"],["aspiration","抱负"],["assertive","自信的"],
+     ["assimilate","吸收"],["astute","机敏的"],["autonomous","自主的"],
+     ["benevolent","仁慈的"],["bureaucratic","官僚的"],["candid","坦诚的"],
+     ["catastrophe","灾难"],["coerce","强制"],["cognizant","知晓的"],
+     ["complacent","自满的"],["concise","简洁的"],["conducive","有利的"],
+     ["conscientious","认真的"],["consensus","共识"],["contemplate","沉思"],
+     ["corroborate","证实"],["credibility","可信度"],["cultivate","培养"],
+     ["cynical","愤世嫉俗的"],["debilitate","削弱"],["deceptive","欺骗性的"],
+     ["deliberate","深思熟虑的"],["detrimental","有害的"],["dichotomy","二分法"],
+     ["discrepancy","差异"],["elucidate","阐明"],["emulate","效仿"],
+     ["exacerbate","加剧"],["exhaustive","彻底的"],["feasible","可行的"],
+     ["fluctuate","波动"],["formidable","强大的"],["hamper","阻碍"],
+     ["imperative","必要的"],["inherent","固有的"]],
+  10:[["aberration","偏差"],["abominable","可恶的"],["acumen","敏锐"],
+      ["admonish","告诫"],["allegory","寓言"],["aloof","冷漠的"],
+      ["ameliorate","改善"],["anachronism","时代错误"],["anomalous","异常的"],
+      ["apprehensive","忧虑的"],["arcane","神秘的"],["arduous","艰辛的"],
+      ["assuage","缓和"],["audacious","大胆的"],["austere","严厉的"],
+      ["aversion","厌恶"],["capitulate","投降"],["capricious","任性的"],
+      ["caustic","苛刻的"],["circumvent","规避"],["coalesce","合并"],
+      ["cogent","令人信服的"],["complacency","自满"],["convoluted","复杂的"],
+      ["copious","丰富的"],["culpable","有罪的"],["cursory","粗略的"],
+      ["dauntless","无畏的"],["debacle","大败"],["decadent","颓废的"],
+      ["delineate","描绘"],["demagogue","煽动者"],["devious","狡猾的"],
+      ["draconian","严酷的"],["eclectic","折衷的"],["egregious","过分的"],
+      ["elusive","难以捉摸的"],["ephemeral","短暂的"],["equivocal","含糊的"],
+      ["eradicate","根除"],["esoteric","深奥的"],["exorbitant","过分的"],
+      ["facetious","滑稽的"],["fatuous","愚蠢的"],["fervent","热烈的"],
+      ["flamboyant","炫耀的"],["hegemony","霸权"],["iconoclast","打破传统者"],
+      ["idiosyncratic","特有的"],["insidious","阴险的"]]
+};
+
+const LEVEL_NAMES = ["入门","基础","校园","情感","职场","科技","经济","学术","四级","终极"];
+const LEVEL_COLORS = ["#00f0ff","#32ff96","#ffc832","#a050ff","#ff7832","#ff3296","#00b4ff","#c8ff64","#ff64c8","#ffd800"];
+const PAIRS_PER_ROUND = 10;
+const TIME_LIMITS = [135,125,115,110,105,100,95,90,85,80];
+
+// ═══════════════════════════════════════════════════════
+//  艾宾浩斯记忆系统
+// ═══════════════════════════════════════════════════════
+const INTERVALS = [1,2,4,7,15,30];
+let wordRecords = {};
+
+function recordResult(word, correct) {
+  if (!wordRecords[word]) wordRecords[word] = {level:0,nextReview:0,correct:0,wrong:0};
+  const r = wordRecords[word];
+  if (correct) { r.correct++; r.level = Math.min(r.level+1, INTERVALS.length-1); }
+  else         { r.wrong++;   r.level = Math.max(0, r.level-1); }
+  r.nextReview = Date.now() + INTERVALS[r.level] * 10000;
+}
+
+function getPriorityWords(pool, count) {
+  const now = Date.now();
+  const due     = pool.filter(w => wordRecords[w[0]] && now >= wordRecords[w[0]].nextReview);
+  const unknown = pool.filter(w => !wordRecords[w[0]]);
+  const weak    = pool.filter(w => wordRecords[w[0]] && wordRecords[w[0]].wrong > wordRecords[w[0]].correct);
+  
+  let result = [];
+  for (const lst of [due, weak, unknown]) {
+    for (const w of lst) if (!result.includes(w)) result.push(w);
+    if (result.length >= count) break;
+  }
+  const remaining = shuffle(pool.filter(w => !result.includes(w)));
+  result.push(...remaining);
+  return result.slice(0, count);
+}
+
+// ═══════════════════════════════════════════════════════
+//  音效 (Web Audio API)
+// ═══════════════════════════════════════════════════════
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, duration, type='sine', vol=0.3, delay=0) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.value = freq;
+    const t = ctx.currentTime + delay;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.start(t); osc.stop(t + duration + 0.05);
+  } catch(e) {}
+}
+
+function playSelect()  { playTone(1200, 0.06, 'sine', 0.2); }
+function playMatch()   { playTone(523,0.12,'sine',0.3); setTimeout(()=>playTone(784,0.2,'sine',0.3),120); }
+function playCombo(n)  {
+  const notes = [523,659,784,1047,1319];
+  for (let i=0;i<Math.min(n,5);i++) playTone(notes[i], 0.14, 'sine', 0.3, i*0.1);
+}
+function playWrong()   { playTone(120, 0.3, 'square', 0.25); }
+function playLevelClear() {
+  [523,659,784,1047,784,1047].forEach((f,i)=>playTone(f,0.18,'sine',0.35,i*0.18));
+}
+function playGameOver(){ [392,330,262].forEach((f,i)=>playTone(f,0.25,'sine',0.3,i*0.22)); }
+function playHint()    { playTone(1175,0.1,'sine',0.2); playTone(1397,0.1,'sine',0.15,0.1); }
+function playTick()    { playTone(2000, 0.04, 'sine', 0.15); }
+function playVictory() {
+  const m=[523,659,784,1047,784,880,1047,1319,1047,1319,1568];
+  m.forEach((f,i)=>playTone(f,0.18,'sine',0.35,i*0.18));
+}
+
+// ═══════════════════════════════════════════════════════
+//  Game State
+// ═══════════════════════════════════════════════════════
+let state = 'menu';
+let level = 1, score = 0, totalScore = 0;
+let combo = 0, maxCombo = 0, wrongCount = 0;
+let timeLeft = 120, timerInterval = null;
+let selectedCard = null;
+let roundWords = [], matchedPairs = 0, hintUsed = 0;
+let hintCardEl = null;
+let lineAnimations = [];
+let lastTickSecond = -1;
+
+const COLORS = { en: '#00f0ff', cn: '#ff3296' };
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i=a.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// ═══════════════════════════════════════════════════════
+//  Stars
+// ═══════════════════════════════════════════════════════
+function initStars() {
+  const container = document.getElementById('stars');
+  for (let i=0;i<120;i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random()<0.6 ? 1 : Math.random()<0.7 ? 2 : 3;
+    s.style.cssText = `
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      width:${size}px;height:${size}px;
+      --dur:${2+Math.random()*4}s;--delay:${Math.random()*4}s;
+      --min-op:${0.1+Math.random()*0.2};--max-op:${0.6+Math.random()*0.4};
+    `;
+    container.appendChild(s);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  Screens
+// ═══════════════════════════════════════════════════════
+function showScreen(id) {
+  ['menuScreen','gameScreen'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+  ['levelClearScreen','gameOverScreen','victoryScreen'].forEach(s => {
+    document.getElementById(s).classList.add('hidden');
+  });
+}
+function showOverlay(id) {
+  ['levelClearScreen','gameOverScreen','victoryScreen'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s!==id);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  Game Logic
+// ═══════════════════════════════════════════════════════
+function startGame() {
+  getAudioCtx(); // unlock audio on iOS (requires user gesture)
+  totalScore = 0;
+  wordRecords = {};
+  level = 1;
+  startLevel();
+}
+
+function startLevel() {
+  score = 0; combo = 0; maxCombo = 0; wrongCount = 0;
+  matchedPairs = 0; hintUsed = 0;
+  selectedCard = null; hintCardEl = null;
+  lineAnimations = [];
+  lastTickSecond = -1;
+
+  const pool = WORD_BANK[level] || WORD_BANK[1];
+  roundWords = getPriorityWords(pool, PAIRS_PER_ROUND);
+
+  timeLeft = TIME_LIMITS[level-1] || 120;
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(timerTick, 1000);
+
+  updateHUD();
+  renderCards();
+  showScreen('gameScreen');
+}
+
+function timerTick() {
+  if (state !== 'playing') return;
+  timeLeft--;
+  updateHUD();
+
+  // Tick sound for last 15s
+  if (timeLeft <= 15 && timeLeft > 0) {
+    const interval = timeLeft <= 8 ? 2 : 1; // every 2 ticks under 8s
+    if (timeLeft % interval === 0) playTick();
+  }
+
+  if (timeLeft <= 0) {
+    clearInterval(timerInterval);
+    showGameOver();
+  }
+}
+
+function updateHUD() {
+  const lc = LEVEL_COLORS[level-1];
+  document.getElementById('hudLevel').textContent = `第${level}关 · ${LEVEL_NAMES[level-1]}`;
+  document.getElementById('hudLevel').style.color = lc;
+  document.getElementById('hudLevel').style.textShadow = `0 0 10px ${lc}`;
+  document.getElementById('progressBar').style.width = `${matchedPairs/PAIRS_PER_ROUND*100}%`;
+  document.getElementById('progressBar').style.background = `linear-gradient(90deg,${lc},#32ff96)`;
+  document.getElementById('progressBar').style.boxShadow = `0 0 8px ${lc}`;
+  document.getElementById('hudScore').textContent = `★ ${score.toLocaleString()}`;
+  document.getElementById('hudStats').textContent = `已匹配 ${matchedPairs}/${PAIRS_PER_ROUND} · 错误 ${wrongCount}`;
+
+  const mins = Math.floor(timeLeft/60).toString().padStart(2,'0');
+  const secs = (timeLeft%60).toString().padStart(2,'0');
+  const timeEl = document.getElementById('hudTime');
+  timeEl.textContent = `⏱ ${mins}:${secs}`;
+  timeEl.className = 'hud-time ' + (timeLeft<=10?'urgent':timeLeft<=30?'warn':'ok');
+
+  const hb = document.getElementById('hintBtn');
+  const left = 3 - hintUsed;
+  hb.textContent = `💡 提示 (${left}次)`;
+  hb.className = 'hint-btn' + (left===0?' disabled':'');
+}
+
+function renderCards() {
+  const enCol = document.getElementById('enColumn');
+  const cnCol = document.getElementById('cnColumn');
+  enCol.innerHTML = '<div class="col-label" style="color:var(--cyan)">E N G L I S H</div>';
+  cnCol.innerHTML = '<div class="col-label" style="color:var(--pink)">中　文</div>';
+
+  const enOrder = shuffle([...Array(roundWords.length).keys()]);
+  const cnOrder = shuffle([...Array(roundWords.length).keys()]);
+
+  enOrder.forEach((idx, pos) => {
+    const card = makeCard(roundWords[idx][0], 'en', idx, pos);
+    enCol.appendChild(card);
+  });
+  cnOrder.forEach((idx, pos) => {
+    const card = makeCard(roundWords[idx][1], 'cn', idx, pos);
+    cnCol.appendChild(card);
+  });
+
+  state = 'playing';
+  resizeCanvases();
+}
+
+function makeCard(word, side, idx, pos) {
+  const el = document.createElement('div');
+  el.className = `card ${side}-card`;
+  el.dataset.idx = idx;
+  el.dataset.side = side;
+  el.style.animationDelay = `${pos*0.04}s`;
+
+  const tag = document.createElement('div');
+  tag.className = 'card-tag';
+  tag.textContent = side === 'en' ? 'EN' : '中';
+  el.appendChild(tag);
+
+  const word_el = document.createElement('div');
+  word_el.className = 'card-word';
+  word_el.textContent = word;
+  // Auto shrink long words
+  if (word.length > 14) word_el.style.fontSize = 'clamp(9px,2.2vw,12px)';
+  else if (word.length > 10) word_el.style.fontSize = 'clamp(10px,2.5vw,13px)';
+  el.appendChild(word_el);
+
+  el.addEventListener('touchstart', onCardTouch, {passive:true});
+  el.addEventListener('click', onCardClick);
+  return el;
+}
+
+function onCardTouch(e) { /* handled by click on iOS too */ }
+function onCardClick(e) {
+  if (state !== 'playing') return;
+  const el = e.currentTarget;
+  if (el.classList.contains('matched')) return;
+  selectCard(el);
+}
+
+function selectCard(el) {
+  playSelect();
+  if (!selectedCard) {
+    selectedCard = el;
+    el.classList.add('selected');
+    if (hintCardEl) { hintCardEl.classList.remove('hint-glow'); hintCardEl = null; }
+    return;
+  }
+
+  const prev = selectedCard;
+  if (prev === el) { prev.classList.remove('selected'); selectedCard = null; return; }
+
+  // Same side → switch selection
+  if (prev.dataset.side === el.dataset.side) {
+    prev.classList.remove('selected');
+    selectedCard = el;
+    el.classList.add('selected');
+    return;
+  }
+
+  // Check match
+  if (prev.dataset.idx === el.dataset.idx) {
+    onMatch(prev, el);
+  } else {
+    onWrong(prev, el);
+  }
+}
+
+function onMatch(a, b) {
+  const word = roundWords[parseInt(a.dataset.idx)][0];
+  recordResult(word, true);
+
+  a.classList.remove('selected'); b.classList.remove('selected');
+  a.classList.add('matched'); b.classList.add('matched');
+  selectedCard = null;
+  matchedPairs++;
+  combo++;
+  maxCombo = Math.max(maxCombo, combo);
+
+  const base = 100, timeBonus = Math.floor(timeLeft * 0.5), comboBonus = (combo-1)*50;
+  const pts = base + timeBonus + comboBonus;
+  score += pts; totalScore += pts;
+
+  // Sound
+  if (combo >= 5) playCombo(5);
+  else if (combo >= 3) playCombo(3);
+  else if (combo >= 2) playCombo(2);
+  else playMatch();
+
+  // Flash
+  showResultFlash(combo > 1 ? `COMBO ×${combo}  +${pts}` : `+${pts}`,
+                  combo > 2 ? '#ffc832' : '#32ff96');
+
+  // Particles
+  const ra = getCardCenter(a), rb = getCardCenter(b);
+  burst(ra.x, ra.y, LEVEL_COLORS[level-1], 20);
+  burst(rb.x, rb.y, LEVEL_COLORS[level-1], 20);
+  if (combo >= 3) burst((ra.x+rb.x)/2, (ra.y+rb.y)/2, '#ffc832', 30);
+
+  // Line
+  lineAnimations.push({x1:ra.x,y1:ra.y,x2:rb.x,y2:rb.y,color:LEVEL_COLORS[level-1],progress:0,life:30});
+  drawLines();
+
+  updateHUD();
+
+  if (matchedPairs >= PAIRS_PER_ROUND) {
+    clearInterval(timerInterval);
+    state = 'level_clear';
+    setTimeout(showLevelClear, 700);
+  }
+}
+
+function onWrong(a, b) {
+  const word = roundWords[parseInt(a.dataset.idx)][0];
+  recordResult(word, false);
+
+  a.classList.remove('selected'); b.classList.remove('selected');
+  selectedCard = null;
+  combo = 0; wrongCount++;
+  timeLeft = Math.max(0, timeLeft - 5);
+
+  a.classList.add('wrong'); b.classList.add('wrong');
+  setTimeout(() => { a.classList.remove('wrong'); b.classList.remove('wrong'); }, 400);
+
+  playWrong();
+  showResultFlash('✗  再想想…', '#ff3232');
+  updateHUD();
+}
+
+function useHint() {
+  if (hintUsed >= 3 || state !== 'playing') return;
+  const unmatched = [...document.querySelectorAll('.card:not(.matched)')];
+  if (!unmatched.length) return;
+  if (hintCardEl) hintCardEl.classList.remove('hint-glow');
+  hintCardEl = unmatched[Math.floor(Math.random()*unmatched.length)];
+  hintCardEl.classList.add('hint-glow');
+  hintUsed++;
+  score = Math.max(0, score - 50);
+  playHint();
+  updateHUD();
+}
+
+// ═══════════════════════════════════════════════════════
+//  Result flash
+// ═══════════════════════════════════════════════════════
+function showResultFlash(text, color) {
+  document.querySelectorAll('.result-flash').forEach(e=>e.remove());
+  const el = document.createElement('div');
+  el.className = 'result-flash';
+  el.textContent = text;
+  el.style.color = color;
+  el.style.textShadow = `0 0 20px ${color}`;
+  document.getElementById('gameScreen').appendChild(el);
+  setTimeout(() => el.remove(), 850);
+
+  if (combo > 1) {
+    const cb = document.querySelector('.combo-banner') || (() => {
+      const d = document.createElement('div'); d.className='combo-banner';
+      document.getElementById('gameScreen').appendChild(d); return d;
+    })();
+    cb.textContent = `🔥 COMBO × ${combo}`;
+    cb.style.opacity = '1';
+    clearTimeout(cb._t);
+    cb._t = setTimeout(()=>cb.style.opacity='0', 1200);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  Canvas: Lines & Particles
+// ═══════════════════════════════════════════════════════
+function resizeCanvases() {
+  const area = document.getElementById('cardsArea');
+  const lc = document.getElementById('lineCanvas');
+  const pc = document.getElementById('particleCanvas');
+  lc.width = pc.width = area.offsetWidth;
+  lc.height = pc.height = area.offsetHeight;
+}
+
+function getCardCenter(el) {
+  const area = document.getElementById('cardsArea').getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  return { x: r.left - area.left + r.width/2, y: r.top - area.top + r.height/2 };
+}
+
+let lineRAF = null;
+function drawLines() {
+  const canvas = document.getElementById('lineCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  lineAnimations = lineAnimations.filter(l => l.life > 0);
+  lineAnimations.forEach(l => {
+    l.progress = Math.min(1, l.progress + 0.08);
+    l.life--;
+    const tx = l.x1 + (l.x2-l.x1)*l.progress;
+    const ty = l.y1 + (l.y2-l.y1)*l.progress;
+    const alpha = l.life / 30;
+
+    ctx.beginPath();
+    ctx.moveTo(l.x1, l.y1); ctx.lineTo(tx, ty);
+    ctx.strokeStyle = l.color + Math.floor(alpha*255).toString(16).padStart(2,'0');
+    ctx.lineWidth = 3; ctx.shadowBlur = 12; ctx.shadowColor = l.color;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  });
+
+  if (lineAnimations.length > 0) {
+    lineRAF = requestAnimationFrame(drawLines);
+  }
+}
+
+// Particles
+const particles = [];
+let particleRAF = null;
+
+function burst(x, y, color, count=15) {
+  for (let i=0;i<count;i++) {
+    const angle = Math.random()*Math.PI*2;
+    const speed = 1+Math.random()*5;
+    particles.push({
+      x,y,color,
+      vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed - Math.random()*3,
+      life:1, size:2+Math.random()*4
+    });
+  }
+  if (!particleRAF) animateParticles();
+}
+
+function animateParticles() {
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  for (let i=particles.length-1;i>=0;i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.vx *= 0.97;
+    p.life -= 0.025;
+    if (p.life <= 0) { particles.splice(i,1); continue; }
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size*p.life, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  if (particles.length > 0) particleRAF = requestAnimationFrame(animateParticles);
+  else particleRAF = null;
+}
+
+// ═══════════════════════════════════════════════════════
+//  Overlays
+// ═══════════════════════════════════════════════════════
+function showLevelClear() {
+  playLevelClear();
+  const lc = LEVEL_COLORS[level-1];
+  document.getElementById('lcSubtitle').textContent = `第 ${level} 关完成`;
+
+  const weakWords = roundWords.filter(w => wordRecords[w[0]] && wordRecords[w[0]].wrong > 0);
+  const timeBonus = Math.floor(timeLeft);
+  document.getElementById('lcStats').innerHTML = `
+    <div class="stat-row"><span class="stat-label">本关得分</span><span class="stat-value" style="color:${lc}">${score.toLocaleString()}</span></div>
+    <div class="stat-row"><span class="stat-label">最高连击</span><span class="stat-value">× ${maxCombo}</span></div>
+    <div class="stat-row"><span class="stat-label">错误次数</span><span class="stat-value">${wrongCount}</span></div>
+    <div class="stat-row"><span class="stat-label">剩余时间</span><span class="stat-value">${timeLeft} 秒</span></div>
+    <div class="stat-row"><span class="stat-label">累计总分</span><span class="stat-value" style="color:#ffc832">${totalScore.toLocaleString()}</span></div>
+  `;
+  const mem = document.getElementById('lcMemory');
+  if (weakWords.length > 0) {
+    mem.textContent = `🧠 ${weakWords.length} 个弱词将优先在下关出现：${weakWords.slice(0,3).map(w=>w[0]).join('、')}…`;
+    mem.style.display = 'block';
+  } else {
+    mem.textContent = '🧠 全部掌握！艾宾浩斯记忆法追踪你的进度';
+  }
+
+  const nextBtn = document.getElementById('lcNextBtn');
+  if (level >= 10) { nextBtn.textContent = '查看成就 🏆'; nextBtn.onclick = showVictory; }
+  else { nextBtn.textContent = `下一关 →`; nextBtn.onclick = nextLevel; }
+
+  showOverlay('levelClearScreen');
+}
+
+function showGameOver() {
+  state = 'game_over';
+  playGameOver();
+  document.getElementById('goSub').textContent = `已匹配 ${matchedPairs}/${PAIRS_PER_ROUND} 对`;
+  document.getElementById('goStats').innerHTML = `
+    <div class="stat-row"><span class="stat-label">本关得分</span><span class="stat-value">${score.toLocaleString()}</span></div>
+    <div class="stat-row"><span class="stat-label">最高连击</span><span class="stat-value">× ${maxCombo}</span></div>
+    <div class="stat-row"><span class="stat-label">累计总分</span><span class="stat-value" style="color:#ffc832">${totalScore.toLocaleString()}</span></div>
+  `;
+  showOverlay('gameOverScreen');
+}
+
+function showVictory() {
+  playVictory();
+  document.getElementById('vicStats').innerHTML = `
+    <div class="stat-row"><span class="stat-label">最终总分</span><span class="stat-value" style="color:#ffc832;font-size:24px">${totalScore.toLocaleString()}</span></div>
+    <div class="stat-row"><span class="stat-label">已掌握词汇</span><span class="stat-value">${Object.keys(wordRecords).length} 个</span></div>
+    <div class="stat-row"><span class="stat-label">全程准确率</span><span class="stat-value">${Math.round(Object.values(wordRecords).reduce((s,r)=>s+r.correct,0)/(Object.values(wordRecords).reduce((s,r)=>s+r.correct+r.wrong,0)||1)*100)}%</span></div>
+  `;
+  showOverlay('victoryScreen');
+}
+
+function nextLevel() {
+  level++;
+  if (level > 10) { showVictory(); return; }
+  startLevel();
+}
+function retryLevel() { startLevel(); }
+function goMenu() {
+  if (timerInterval) clearInterval(timerInterval);
+  state = 'menu';
+  showScreen('menuScreen');
+  showOverlay('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  Init
+// ═══════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  if (state === 'playing') resizeCanvases();
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { if (state === 'playing') resizeCanvases(); }, 300);
+});
+
+initStars();
+</script>
+</body>
+</html>
